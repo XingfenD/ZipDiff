@@ -16,8 +16,8 @@ use execute::execute;
 use mutation::Mutator;
 use rand::thread_rng;
 use stats::Stats;
+#[cfg(unix)]
 use std::fs::canonicalize;
-use std::process::Command;
 use std::time::Instant;
 use zip_diff::zip::ZipArchive;
 
@@ -28,14 +28,22 @@ pub enum Input {
 }
 
 fn main() {
-    let input_dir = canonicalize(&CONFIG.input_dir).expect("failed to canonicalize input dir");
-    let output_dir = canonicalize(&CONFIG.output_dir).expect("failed to canonicalize output dir");
-    let parser_prepare_status = Command::new(CONFIG.parsers_dir.join("prepare.sh"))
-        .env("INPUT_DIR", input_dir)
-        .env("OUTPUT_DIR", output_dir)
-        .status()
-        .expect("failed to execute prepare.sh");
-    assert!(parser_prepare_status.success(), "prepare.sh failed");
+    #[cfg(windows)]
+    {
+        println!("Skipping prepare.sh on Windows platform");
+    }
+
+    #[cfg(unix)]
+    {
+        let input_dir = canonicalize(&CONFIG.input_dir).expect("failed to canonicalize input dir");
+        let output_dir = canonicalize(&CONFIG.output_dir).expect("failed to canonicalize output dir");
+        let parser_prepare_status = Command::new(CONFIG.parsers_dir.join("prepare.sh"))
+            .env("INPUT_DIR", input_dir)
+            .env("OUTPUT_DIR", output_dir)
+            .status()
+            .expect("failed to execute prepare.sh");
+        assert!(parser_prepare_status.success(), "prepare.sh failed");
+    }
 
     let mut mutator = Mutator::new();
     let mut stats = Stats::new();

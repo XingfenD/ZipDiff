@@ -80,13 +80,23 @@ fn main() -> Result<()> {
         }
     }
 
-    let parser_prepare_status = Command::new("../parsers/prepare.sh")
-        .env("INPUT_DIR", INPUT_DIR)
-        .env("OUTPUT_DIR", OUTPUT_DIR)
-        .status()
-        .expect("failed to execute parsers/prepare.sh");
-    if !parser_prepare_status.success() {
-        bail!("parsers/prepare.sh failed");
+    #[cfg(unix)]
+    {
+        let parser_prepare_status = Command::new("../parsers/prepare.sh")
+            .env("INPUT_DIR", INPUT_DIR)
+            .env("OUTPUT_DIR", OUTPUT_DIR)
+            .status()
+            .expect("failed to execute parsers/prepare.sh");
+        if !parser_prepare_status.success() {
+            bail!("parsers/prepare.sh failed");
+        }
+    }
+
+    // On Windows, we need to handle the shell script differently
+    #[cfg(windows)]
+    {
+        // Skip prepare.sh execution on Windows since it's a bash script
+        println!("Skipping prepare.sh on Windows platform");
     }
 
     Command::new("docker")
