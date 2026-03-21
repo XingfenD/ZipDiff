@@ -8,9 +8,9 @@ pub fn init_corpus() -> Vec<ZipArchive> {
     let mut result = Vec::new();
 
     let mut zip = ZipArchive::default();
-    zip.add_simple("a", b"a").unwrap();
-    zip.add_simple("b/c", b"c").unwrap();
-    zip.add_simple("b/d", b"d").unwrap();
+    zip.add_simple("a", b"d").unwrap();
+    zip.add_simple("b", b"b").unwrap();
+    zip.add_simple("c/d", b"a").unwrap();
     zip.finalize().unwrap();
     result.push(zip);
 
