@@ -1,10 +1,10 @@
-FROM rust:1.82-slim-bookworm AS build
+FROM rust:1.85-slim-bookworm AS build
 
 WORKDIR /src/unzip
 
 RUN cargo init
 
-RUN cargo add zip@2.2.0
+RUN cargo add zip@0.6.6
 
 COPY unzip.rs src/main.rs
 

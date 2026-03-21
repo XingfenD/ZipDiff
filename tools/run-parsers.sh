@@ -6,7 +6,7 @@ base="$(dirname "$(dirname "$(realpath "$0")")")"
 
 "$base"/tools/prepare.sh
 
-sudo rm -rf "$base"/evaluation/{input,output}
+rm -rf "$base"/evaluation/{input,output}
 mkdir -p "$base/evaluation/input"
 
 for i in $(seq 1 $#); do
@@ -15,17 +15,17 @@ for i in $(seq 1 $#); do
 done
 
 pushd "$base/parsers"
-sudo docker compose up
+docker compose up
 popd
 
 for i in $(seq 1 $#); do
     testcase="$(realpath "${!i}")"
     result="$base/evaluation/results/${testcase#"$base/"}"
-    sudo rm -rf "$result"
+    rm -rf "$result"
     mkdir -p "$result"
     for p in "$base/parsers/"*/; do
         parser="$(basename "$p")"
-        sudo mv "$base/evaluation/output/$parser/$i.zip" "$result/$parser" &
+        mv "$base/evaluation/output/$parser/$i.zip" "$result/$parser" &
     done
 done
 
