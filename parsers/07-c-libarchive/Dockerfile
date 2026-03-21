@@ -1,20 +1,23 @@
-FROM alpine:3.20 AS build
+# Copyright (c) [Fendy/WHU] [2025-2026]
+# Licensed under the MIT License (the "MIT License");
+# You may obtain a copy of the MIT License at:
+#   https://opensource.org/licenses/MIT
 
-RUN apk add g++ make
+FROM alpine:3.20 AS env
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories && apk add --no-cache gcc make musl-dev lcov gzip
+RUN apk add --no-cache g++ cmake zlib-dev
+WORKDIR /workspace
 
-WORKDIR /tmp
-ADD https://github.com/libarchive/libarchive/releases/download/v3.7.7/libarchive-3.7.7.tar.gz .
-RUN tar xf libarchive-*.tar.gz
-RUN mv libarchive-*/ /src
+FROM env AS file_prepare
+COPY src.tar.gz /workspace
+RUN tar -xzf src.tar.gz && rm src.tar.gz
+COPY unzip unzip-all.sh coverage.sh app.env /workspace/
 
-WORKDIR /src
-RUN ./configure
-RUN make -j$(nproc --ignore=2) bsdunzip
+FROM file_prepare AS build
+RUN mkdir /workspace/src/build-coverage && \
+    cd /workspace/src/build-coverage && \
+    CFLAGS="-fprofile-arcs -ftest-coverage" && \
+    cmake -DENABLE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug .. && \
+    make -j$(nproc --ignore=2) bsdunzip
 
-FROM alpine:3.20
-
-COPY --from=build /src/bsdunzip /usr/local/bin/
-
-COPY unzip unzip-all.sh /
-
-ENTRYPOINT ["/unzip-all.sh"]
+ENTRYPOINT ["./unzip-all.sh"]

@@ -1,18 +1,15 @@
-FROM golang:1.22.3-alpine3.20 AS build
+FROM golang:1.22.3-alpine3.20 AS env
 
-WORKDIR /src
+WORKDIR /workspace
 
-RUN go mod init main
+RUN mkdir src /cov && cd src && go mod init main && go get github.com/evilsocket/islazy/zip
+ENV GOCOVERDIR=/cov
+COPY unzip unzip-all.sh coverage.sh app.env /workspace/
+COPY unzip.go /workspace/src/
 
-RUN go get github.com/evilsocket/islazy/zip
+FROM env AS build
 
-COPY unzip.go .
-
-RUN go build unzip.go
-
-FROM alpine:3.20
-
-COPY --from=build /src/unzip /
+RUN cd /workspace/src && go build -cover -coverpkg=github.com/evilsocket/islazy/zip,./... -o unzip
 
 COPY unzip-all.sh /
 ENTRYPOINT ["/unzip-all.sh"]

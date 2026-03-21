@@ -1,9 +1,12 @@
 FROM ruby:3.3-alpine
 
-RUN gem install rubyzip -v 2.3.2
+WORKDIR /workspace
 
-COPY unzip.rb /
+RUN mkdir /workspace/src
 
-COPY unzip unzip-all.sh /
+COPY unzip.rb Gemfile /workspace/src/
+COPY unzip unzip-all.sh /workspace/
 
-ENTRYPOINT [ "/unzip-all.sh" ]
+RUN cd /workspace/src && bundle install
+
+ENTRYPOINT [ "/workspace/unzip-all.sh" ]

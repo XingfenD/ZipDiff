@@ -1,24 +1,23 @@
-FROM debian:12-slim AS build
+# Copyright (c) [Fendy/WHU] [2025-2026]
+# Licensed under the MIT License (the "MIT License");
+# You may obtain a copy of the MIT License at:
+#   https://opensource.org/licenses/MIT
 
-RUN apt-get update
-RUN apt-get install -y cmake zlib1g-dev
+FROM alpine:3.20 AS env
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories && apk add --no-cache gcc make musl-dev lcov gzip
+RUN apk add --no-cache g++ cmake zlib-dev python3
+WORKDIR /workspace
 
-WORKDIR /tmp
-ADD https://github.com/gdraheim/zziplib/archive/refs/tags/v0.13.78.tar.gz .
-RUN tar xf *.tar.gz
-RUN mv zziplib-*/ /src
+FROM env AS file_prepare
+COPY src.tar.gz /workspace
+RUN tar -xzf src.tar.gz && rm src.tar.gz
+COPY unzip unzip-all.sh coverage.sh app.env /workspace/
 
-WORKDIR /src
-RUN cmake -S . -B build -D ZZIPBINS=On -D BUILD_SHARED_LIBS=Off -D ZZIPWRAP=Off -D ZZIPSDL=Off -D ZZIPTEST=Off -D ZZIPDOCS=Off
-RUN cmake --build build
+FROM file_prepare AS build
+RUN cd /workspace/src && \
+    mkdir build-coverage && \
+    cd build-coverage && \
+    cmake -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON -DBUILD_TESTS=ON .. && \
+    make -j$(nproc) unzzip
 
-FROM debian:12-slim
-
-RUN apt-get update
-RUN apt-get install -y zlib1g
-
-COPY --from=build /src/build/bins/unzzip /usr/local/bin
-
-COPY unzip unzip-all.sh /
-
-ENTRYPOINT [ "/unzip-all.sh" ]
+ENTRYPOINT ["./unzip-all.sh"]

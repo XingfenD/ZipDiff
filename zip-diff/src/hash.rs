@@ -1,4 +1,5 @@
 use blake3::{Hash, Hasher};
+use std::collections::HashSet;
 use std::path::Path;
 
 #[derive(Clone, Copy)]
@@ -17,16 +18,26 @@ impl ParsingResult {
 }
 
 pub fn read_parsing_result(path: impl AsRef<Path>, par: bool) -> ParsingResult {
+    read_parsing_result_with_ignore(path, par, &HashSet::new())
+}
+
+pub fn read_parsing_result_with_ignore(
+    path: impl AsRef<Path>,
+    par: bool,
+    ignore_names: &HashSet<Vec<u8>>,
+) -> ParsingResult {
     let path = path.as_ref();
     if path.is_dir() {
-        ParsingResult::Ok(dirhash(path, par).unwrap_or(Hash::from_bytes(Default::default())))
+        ParsingResult::Ok(
+            dirhash(path, par, ignore_names).unwrap_or(Hash::from_bytes(Default::default())),
+        )
     } else {
         ParsingResult::Err
     }
 }
 
 // Returns `None` for empty directory
-fn dirhash(path: impl AsRef<Path>, par: bool) -> Option<Hash> {
+fn dirhash(path: impl AsRef<Path>, par: bool, ignore_names: &HashSet<Vec<u8>>) -> Option<Hash> {
     let path = path.as_ref();
     let path_display = path.display();
     let mut hasher = Hasher::new();
@@ -59,6 +70,9 @@ fn dirhash(path: impl AsRef<Path>, par: bool) -> Option<Hash> {
                 let entry_path = entry.path();
                 let mut hasher = Hasher::new();
                 let name = entry.file_name().into_encoded_bytes();
+                if ignore_names.contains(&name) {
+                    return None;
+                }
                 if name.iter().all(|x| {
                     x.is_ascii_alphanumeric() || matches!(x, b'.' | b'_' | b'-' | b'[' | b']')
                 }) {
@@ -69,7 +83,7 @@ fn dirhash(path: impl AsRef<Path>, par: bool) -> Option<Hash> {
                     hasher.update(b"S");
                 }
                 hasher.update(
-                    dirhash(entry_path, par)? /* ignore empty dir */
+                    dirhash(entry_path, par, ignore_names)? /* ignore empty dir */
                         .as_bytes(),
                 );
                 Some(hasher.finalize().into())

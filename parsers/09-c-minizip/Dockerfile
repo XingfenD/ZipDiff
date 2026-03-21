@@ -1,22 +1,21 @@
-FROM debian:12-slim AS build
+# Copyright (c) [Fendy/WHU] [2025-2026]
+# Licensed under the MIT License (the "MIT License");
+# You may obtain a copy of the MIT License at:
+#   https://opensource.org/licenses/MIT
 
-RUN apt-get update
-RUN apt-get install -y gcc make
+FROM alpine:3.20 AS env
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories && apk add --no-cache gcc make musl-dev lcov gzip
+WORKDIR /workspace
 
-WORKDIR /tmp
-ADD https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz .
-RUN tar xf zlib-*.tar.gz
-RUN mv zlib-*/ /src
+FROM env AS file_prepare
+COPY src.tar.gz /workspace
+RUN tar -xzf src.tar.gz && rm src.tar.gz
+COPY unzip unzip-all.sh coverage.sh app.env /workspace/
 
-WORKDIR /src
-RUN ./configure
-RUN make libz.a
-RUN make -C contrib/minizip miniunz
+FROM file_prepare AS build
+RUN cd /workspace/src && \
+    ./configure --cover && \
+    make libz.a && \
+    make -C contrib/minizip CFLAGS="-O -I../.. -fprofile-arcs -ftest-coverage" LDFLAGS="-fprofile-arcs -ftest-coverage" miniunz
 
-FROM debian:12-slim
-
-COPY --from=build /src/contrib/minizip/miniunz /usr/local/bin/miniunzip
-
-COPY unzip unzip-all.sh /
-
-ENTRYPOINT ["/unzip-all.sh"]
+ENTRYPOINT ["./unzip-all.sh"]

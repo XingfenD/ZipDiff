@@ -2,3 +2,4 @@
 /constructions/*/
 *.json
 *.pdf
+/temp

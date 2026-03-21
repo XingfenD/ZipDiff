@@ -1,22 +1,27 @@
-FROM debian:12-slim AS build
+# Copyright (c) [Fendy/WHU] [2025-2026]
+# Licensed under the MIT License (the "MIT License");
+# You may obtain a copy of the MIT License at:
+#   https://opensource.org/licenses/MIT
 
-RUN apt-get update
-RUN apt-get install -y gprbuild gnat-12 unzip
+FROM debian:12-slim AS apt_updated
+COPY debian.sources /etc/apt/sources.list.d
 
-ADD https://github.com/zertovitch/zip-ada/archive/aaba1a767a47851df075a9884457052719e0488f.zip src.zip
-RUN unzip src.zip
-RUN mv zip-ada-* src
+RUN sed -i 's|https://|http://|g' /etc/apt/sources.list.d/debian.sources && \
+    apt-get update && \
+    apt-get install -y ca-certificates && \
+    rm -rf /var/lib/apt/lists/* && \
+    sed -i 's|http://|https://|g' /etc/apt/sources.list.d/debian.sources && \
+    apt-get update
 
-WORKDIR /src
-RUN gprbuild -p -P zipada.gpr
+FROM apt_updated as pre_build
+WORKDIR /workspace
 
-FROM debian:12-slim
+COPY src.tar.gz /workspace
+RUN tar -xzf src.tar.gz && rm src.tar.gz
+RUN apt-get install -y gprbuild gnat-12 lcov make && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update
-RUN apt-get install -y libgnat-12
-
-COPY --from=build /src/unzipada /
-
-COPY unzip unzip-all.sh /
+FROM pre_build as build
+RUN cd src && gprbuild -p -P zipada.gpr -XZip_Build_Mode=Coverage
+COPY unzip unzip-all.sh coverage.sh /workspace
 
 ENTRYPOINT ["/unzip-all.sh"]

@@ -17,6 +17,7 @@ pub struct Config {
     pub samples_dir: PathBuf,
     pub results_dir: PathBuf,
     pub stats_file: PathBuf,
+    pub hash_ignore: Vec<String>,
     pub argmax_ucb: bool,
     pub byte_mutation_only: bool,
     pub stop_at: Option<Instant>,
@@ -57,6 +58,7 @@ pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
         samples_dir,
         results_dir,
         stats_file,
+        hash_ignore: opts.hash_ignore,
         argmax_ucb: opts.argmax_ucb,
         byte_mutation_only: opts.byte_mutation_only,
         stop_at,
@@ -106,6 +108,9 @@ struct Cli {
     /// file to save the fuzz stats
     #[arg(long, default_value = "../evaluation/stats.json")]
     stats_file: String,
+    /// directory or file names to ignore when hashing parser outputs (comma-separated or repeated)
+    #[arg(long, value_delimiter = ',', num_args = 0..)]
+    hash_ignore: Vec<String>,
     /// Use argmax UCB instead of softmax UCB
     #[arg(long, default_value_t = false)]
     argmax_ucb: bool,

@@ -1,0 +1,7 @@
+source "https://rubygems.org"   # 告诉 bundler 去官方源下载
+
+group :test do
+  gem 'simplecov',      require: false
+  gem 'simplecov-html', require: false
+  gem 'rubyzip', '2.3.2'
+end

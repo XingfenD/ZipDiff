@@ -1,9 +1,10 @@
 use crate::config::CONFIG;
 use fixedbitset::FixedBitSet;
+use std::collections::HashSet;
 use std::ops::BitOrAssign;
 use std::path::Path;
 use std::sync::LazyLock;
-use zip_diff::hash::{read_parsing_result, ParsingResult};
+use zip_diff::hash::{read_parsing_result_with_ignore, ParsingResult};
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Feature {
@@ -12,6 +13,8 @@ pub struct Feature {
 }
 
 pub static PAIR_LIST: LazyLock<Vec<(String, String)>> = LazyLock::new(Feature::pair_list);
+static HASH_IGNORE: LazyLock<HashSet<Vec<u8>>> =
+    LazyLock::new(|| CONFIG.hash_ignore.iter().map(|s| s.as_bytes().to_vec()).collect());
 
 impl Feature {
     pub fn new() -> Self {
@@ -31,7 +34,13 @@ impl Feature {
         let results = CONFIG
             .parsers
             .iter()
-            .map(|parser| read_parsing_result(CONFIG.output_dir.join(parser).join(&name), par))
+            .map(|parser| {
+                read_parsing_result_with_ignore(
+                    CONFIG.output_dir.join(parser).join(&name),
+                    par,
+                    &HASH_IGNORE,
+                )
+            })
             .collect::<Vec<_>>();
 
         let mut p = 0;

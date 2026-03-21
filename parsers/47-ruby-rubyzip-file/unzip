@@ -1,3 +1,12 @@
-#!/bin/sh
+#!/usr/bin/env ruby
 
-ruby /unzip.rb "$@"
+require 'simplecov'
+SimpleCov.start do
+  track_files '**/*.rb'
+  add_group 'App',      '/workspace/src'
+  add_group 'RubyZip',  '/usr/local/bundle/gems/rubyzip-2.3.2'
+  SimpleCov.coverage_dir    ARGV[1] + '/coverage'
+end
+
+ARGV.unshift File.expand_path('src/unzip.rb', __dir__)
+load ARGV.shift
