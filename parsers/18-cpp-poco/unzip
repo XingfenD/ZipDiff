@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -eu
+
+filename=$(basename "$1")
+src_dir="/poco"
+
+find "$src_dir/build" -name "*.gcda" -delete 2>/dev/null || true
+/workspace/unzip-bin "$1" "$2"
+
+/workspace/coverage.sh "$src_dir" "$filename" "$2/.."

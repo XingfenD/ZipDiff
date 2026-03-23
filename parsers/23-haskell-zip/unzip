@@ -1,3 +1,13 @@
 #!/bin/sh
 
-/haskell-zip-app uncompress "$1" "$2"
+set -eu
+
+filename=$(basename "$1")
+cov_dir=$(mktemp -d /tmp/hpc.XXXXXX)
+tix_file="$cov_dir/zip.tix"
+
+trap 'rm -rf "$cov_dir"' EXIT
+
+HPCTIXFILE="$tix_file" /root/.local/bin/haskell-zip-app uncompress "$1" "$2"
+
+/workspace/coverage.sh "$tix_file" "Codec.Archive.Zip" "$filename" "$2/.."

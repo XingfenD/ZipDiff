@@ -1,0 +1,16 @@
+#!/bin/sh
+
+set -eu
+
+filename=$(basename "$1")
+out_dir="$2/.."
+
+rm -f /tmp/swift-zip-*.profraw /tmp/swift-zip.profdata 2>/dev/null || true
+LLVM_PROFILE_FILE="/tmp/swift-zip-%p.profraw" /workspace/unzip-bin "$1" "$2"
+
+/workspace/coverage.sh \
+  "/workspace/unzip-bin" \
+  "/tmp/swift-zip.profdata" \
+  "/tmp/swift-zip-*.profraw" \
+  "$filename" \
+  "$out_dir"

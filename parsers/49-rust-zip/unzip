@@ -1,0 +1,16 @@
+#!/bin/sh
+
+set -eu
+
+filename=$(basename "$1")
+out_dir="$2/.."
+
+rm -f /tmp/rust-zip-*.profraw /tmp/rust-zip.profdata 2>/dev/null || true
+LLVM_PROFILE_FILE="/tmp/rust-zip-%p.profraw" /workspace/unzip-bin "$1" "$2"
+
+/workspace/coverage.sh \
+  "/workspace/unzip-bin" \
+  "/tmp/rust-zip.profdata" \
+  "/tmp/rust-zip-*.profraw" \
+  "$filename" \
+  "$out_dir"

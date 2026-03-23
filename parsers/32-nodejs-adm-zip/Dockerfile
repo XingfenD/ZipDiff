@@ -2,15 +2,13 @@ FROM node:20-alpine
 
 WORKDIR /src
 
-RUN apk add parallel
-
 RUN npm init -y
-
 RUN npm install adm-zip@0.5.16
+RUN npm install -g c8@10.1.2
 
-COPY unzip.js .
+COPY unzip.js /src/unzip.js
 
-COPY unzip /
+WORKDIR /workspace
+COPY unzip unzip-all.sh coverage.sh app.env /workspace/
 
-COPY testcase.sh parallel-unzip-all.sh /
-ENTRYPOINT ["/parallel-unzip-all.sh"]
+ENTRYPOINT ["/workspace/unzip-all.sh"]

@@ -2,6 +2,14 @@
 
 set -eu
 
+filename=$(basename "$1")
+cov_dir=$(mktemp -d /tmp/hpc.XXXXXX)
+tix_file="$cov_dir/ziparchive.tix"
+
+trap 'rm -rf "$cov_dir"' EXIT
+
 cd "$2"
 
-/zip-archive -d "$1"
+HPCTIXFILE="$tix_file" /root/.local/bin/zip-archive -d "$1"
+
+/workspace/coverage.sh "$tix_file" "Codec.Archive.Zip" "$filename" "$2/.."

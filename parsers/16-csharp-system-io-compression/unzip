@@ -1,0 +1,19 @@
+#!/bin/sh
+
+set -eu
+
+filename=$(basename "$1")
+cov_dir=$(mktemp -d /tmp/cov.XXXXXX)
+cov_prefix="$cov_dir/coverage"
+target_args="/workspace/build/unzip.dll \"$1\" \"$2\""
+
+trap 'rm -rf "$cov_dir"' EXIT
+
+/tools/coverlet /workspace/build/unzip.dll \
+    --target dotnet \
+    --targetargs "$target_args" \
+    --format cobertura \
+    --output "$cov_prefix" \
+    --include "[System.IO.Compression*]*" >/dev/null
+
+/workspace/coverage.sh "$cov_prefix.cobertura.xml" "System.IO.Compression" "$filename" "$2/.."

@@ -1,20 +1,15 @@
-FROM haskell:9-slim AS build
+FROM haskell:9-slim
 
-RUN apt-get update
-RUN apt-get install -y libbz2-dev
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libbz2-dev && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN cabal update
-RUN cabal install zip-2.1.0
+WORKDIR /workspace
 
-FROM debian:12-slim
+# Build with HPC instrumentation so coverage reflects package internals.
+RUN cabal update && \
+    cabal install zip-2.1.0 --ghc-options="-O0 -fhpc"
 
-WORKDIR /data
+COPY unzip unzip-all.sh coverage.sh app.env /workspace/
 
-RUN apt-get update
-RUN apt-get install -y bzip2
-
-COPY --from=build /root/.local/bin/haskell-zip-app /
-
-COPY unzip unzip-all.sh /
-
-ENTRYPOINT ["/unzip-all.sh"]
+ENTRYPOINT ["/workspace/unzip-all.sh"]

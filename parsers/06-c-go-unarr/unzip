@@ -1,3 +1,16 @@
 #!/bin/sh
 
-/unarr "$1" "$2"
+set -eu
+
+filename=$(basename "$1")
+src_dir="/workspace/src"
+if [ ! -s /workspace/go-workdir.txt ]; then
+    echo "[ERROR] missing /workspace/go-workdir.txt, cannot locate cgo coverage objects" >&2
+    exit 1
+fi
+work_dir="$(cat /workspace/go-workdir.txt)"
+
+find "$src_dir" "$work_dir" -name "*.gcda" -delete 2>/dev/null || true
+/workspace/unarr "$1" "$2"
+
+/workspace/coverage.sh "$src_dir" "$work_dir" "$filename" "$2/.."

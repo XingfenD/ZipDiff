@@ -1,19 +1,20 @@
-FROM rust:1.85-slim-bookworm AS build
+FROM rust:1.85-slim-bookworm
 
-WORKDIR /src/unzip
+WORKDIR /workspace/src
 
 RUN cargo init
-
 RUN cargo add zip@0.6.6
+RUN rustup component add llvm-tools-preview
 
-COPY unzip.rs src/main.rs
+COPY unzip.rs /workspace/src/src/main.rs
 
-RUN cargo build --release
+RUN RUSTFLAGS="-C instrument-coverage" cargo build --release
+RUN cp /workspace/src/target/release/unzip /workspace/unzip-bin
+RUN SYSROOT=$(rustc --print sysroot) && \
+    cp "$SYSROOT/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-profdata" /usr/local/bin/llvm-profdata && \
+    cp "$SYSROOT/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov" /usr/local/bin/llvm-cov
 
-FROM debian:12-slim
+WORKDIR /workspace
+COPY unzip unzip-all.sh coverage.sh app.env /workspace/
 
-COPY --from=build /src/unzip/target/release/unzip /
-
-COPY unzip-all.sh /
-
-ENTRYPOINT [ "/unzip-all.sh" ]
+ENTRYPOINT ["/workspace/unzip-all.sh"]

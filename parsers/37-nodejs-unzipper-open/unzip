@@ -1,3 +1,11 @@
 #!/bin/sh
 
-node /src/unzip.js "$@"
+set -eu
+
+filename=$(basename "$1")
+cov_dir=$(mktemp -d /tmp/v8cov.XXXXXX)
+
+trap 'rm -rf "$cov_dir"' EXIT
+
+NODE_V8_COVERAGE="$cov_dir" node /src/unzip.js "$1" "$2"
+/workspace/coverage.sh "$cov_dir" "node_modules/unzipper/" "$filename" "$2/.."

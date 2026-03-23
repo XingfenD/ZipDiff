@@ -2,5 +2,28 @@
 
 set -eu
 
-7z t "$1"
-7z x -aoa "$1" -o"$2"
+filename=$(basename "$1")
+src_dir="/workspace/src"
+
+executable=""
+for candidate in \
+    "$src_dir/bin/7za" \
+    "$src_dir/bin/7z" \
+    "$src_dir/_o/7za"
+do
+    if [ -x "$candidate" ]; then
+        executable="$candidate"
+        break
+    fi
+done
+
+if [ -z "$executable" ]; then
+    echo "[ERROR] p7zip executable not found under $src_dir" >&2
+    exit 1
+fi
+
+find "$src_dir" -name "*.gcda" -delete
+"$executable" t "$1"
+"$executable" x -aoa "$1" -o"$2"
+
+/workspace/coverage.sh "$src_dir" "$filename" "$2/.."

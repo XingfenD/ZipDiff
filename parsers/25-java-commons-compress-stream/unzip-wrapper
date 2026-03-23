@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -eu
+
+filename=$(basename "$1")
+cov_dir=$(mktemp -d /tmp/jacoco.XXXXXX)
+exec_file="$cov_dir/jacoco.exec"
+
+trap 'rm -rf "$cov_dir"' EXIT
+
+java -javaagent:/tools/jacocoagent.jar=destfile="$exec_file",append=false,includes=org/apache/commons/compress/* \
+    -jar /workspace/unzip.jar "$1" "$2"
+
+/workspace/coverage.sh "$exec_file" "org/apache/commons/compress" "$filename" "$2/.."

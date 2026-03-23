@@ -1,3 +1,11 @@
 #!/bin/sh
 
-php83 /src/unzip.php "$@"
+set -eu
+
+filename=$(basename "$1")
+coverage_json=$(mktemp /tmp/phpcov.XXXXXX.json)
+
+trap 'rm -f "$coverage_json"' EXIT
+
+php -d xdebug.mode=coverage /src/unzip.php "$1" "$2" "$coverage_json"
+/workspace/coverage.sh "$coverage_json" "$filename" "$2/.."

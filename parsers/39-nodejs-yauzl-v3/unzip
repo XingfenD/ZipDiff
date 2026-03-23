@@ -1,3 +1,11 @@
 #!/bin/sh
 
-extract-zip "$@"
+set -eu
+
+filename=$(basename "$1")
+cov_dir=$(mktemp -d /tmp/v8cov.XXXXXX)
+
+trap 'rm -rf "$cov_dir"' EXIT
+
+NODE_V8_COVERAGE="$cov_dir" extract-zip "$1" "$2"
+/workspace/coverage.sh "$cov_dir" "/yauzl/" "$filename" "$2/.."

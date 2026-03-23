@@ -13,8 +13,7 @@ load ARGV.shift
 
 result = SimpleCov.result
 result.format!
-percent = result.covered_percent
 
 zip_name = File.basename(ARGV[0] || 'input.zip')
 output_dir = ARGV[1] || '.'
-File.write(File.join(output_dir, '..', "#{zip_name}.covinfo"), percent.to_s)
+system('/workspace/coverage.sh', File.join(output_dir, 'coverage', '.resultset.json'), zip_name, File.join(output_dir, '..'))

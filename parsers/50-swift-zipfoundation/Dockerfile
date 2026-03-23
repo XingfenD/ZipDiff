@@ -1,18 +1,13 @@
-FROM swift:5.10 AS build
+FROM swift:5.10
 
 COPY src /src
 WORKDIR /src
 
-RUN swift build -c release --static-swift-stdlib
-RUN mv "$(swift build -c release --show-bin-path)/unzip" /
+RUN swift build -c release -Xswiftc -profile-generate -Xswiftc -profile-coverage-mapping
+RUN mv "$(swift build -c release --show-bin-path)/unzip" /workspace/unzip-bin
 
-FROM debian:12-slim
+WORKDIR /workspace
 
-RUN apt-get update
-RUN apt-get install -y parallel
+COPY unzip unzip-all.sh coverage.sh app.env /workspace/
 
-COPY --from=build /unzip /
-
-COPY parallel-unzip-all.sh testcase.sh /
-
-ENTRYPOINT [ "/parallel-unzip-all.sh" ]
+ENTRYPOINT ["/workspace/unzip-all.sh"]

@@ -1,7 +1,7 @@
 FROM erlang:27.1.2.0-alpine
 
-RUN apk add parallel
+WORKDIR /workspace
 
-COPY unzip parallel-unzip-all.sh testcase.sh /
+COPY unzip unzip-all.sh coverage.sh app.env /workspace/
 
-ENTRYPOINT [ "/parallel-unzip-all.sh" ]
+ENTRYPOINT ["/workspace/unzip-all.sh"]

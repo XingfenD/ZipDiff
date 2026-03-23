@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -eu
+
+filename=$(basename "$1")
+out_dir="$2/.."
+
+coverage_output=$(/workspace/unzip-bin "$1" "$2" 2>&1)
+
+/workspace/coverage.sh "$coverage_output" "$filename" "$out_dir"

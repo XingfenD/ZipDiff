@@ -4,6 +4,8 @@ WORKDIR /unzip
 
 RUN dotnet new console
 
+RUN dotnet tool install --tool-path /tools coverlet.console --version 6.0.2
+
 RUN rm ./*.cs
 
 COPY unzip.cs .
@@ -13,8 +15,10 @@ RUN dotnet build -c Release
 FROM mcr.microsoft.com/dotnet/runtime:9.0-alpine
 
 COPY --from=build /unzip/bin/Release/net9.0 /build
+COPY --from=build /tools /tools
 
-RUN ln -s /build/unzip /unzip
+WORKDIR /workspace
 
-COPY unzip-all.sh /
-ENTRYPOINT ["/unzip-all.sh"]
+COPY unzip unzip-all.sh coverage.sh app.env /workspace/
+
+ENTRYPOINT ["/workspace/unzip-all.sh"]

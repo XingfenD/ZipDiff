@@ -1,12 +1,11 @@
-FROM haskell:9-slim AS build
+FROM haskell:9-slim
 
-RUN cabal update
-RUN cabal install zip-archive-0.4.3.2 -f executable
+WORKDIR /workspace
 
-FROM debian:12-slim
+# Build with HPC instrumentation so coverage reflects package internals.
+RUN cabal update && \
+    cabal install zip-archive-0.4.3.2 -f executable --ghc-options="-O0 -fhpc"
 
-COPY --from=build /root/.local/bin/zip-archive /
+COPY unzip unzip-all.sh coverage.sh app.env /workspace/
 
-COPY unzip unzip-all.sh /
-
-ENTRYPOINT ["/unzip-all.sh"]
+ENTRYPOINT ["/workspace/unzip-all.sh"]

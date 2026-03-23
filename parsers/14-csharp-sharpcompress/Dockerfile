@@ -6,6 +6,8 @@ RUN dotnet new console
 
 RUN dotnet add package SharpCompress --version 0.38.0
 
+RUN dotnet tool install --tool-path /tools coverlet.console --version 6.0.2
+
 RUN rm ./*.cs
 
 COPY unzip.cs .
@@ -14,11 +16,11 @@ RUN dotnet build -c Release
 
 FROM mcr.microsoft.com/dotnet/runtime:9.0-alpine
 
-RUN apk add parallel
-
 COPY --from=build /unzip/bin/Release/net9.0 /build
+COPY --from=build /tools /tools
 
-RUN ln -s /build/unzip /unzip
+WORKDIR /workspace
 
-COPY testcase.sh parallel-unzip-all.sh /
-ENTRYPOINT ["/parallel-unzip-all.sh"]
+COPY unzip unzip-all.sh coverage.sh app.env /workspace/
+
+ENTRYPOINT ["/workspace/unzip-all.sh"]

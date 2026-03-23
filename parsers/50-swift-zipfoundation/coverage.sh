@@ -1,0 +1,49 @@
+#!/bin/sh
+
+set -eu
+
+# $1 -- instrumented binary path
+# $2 -- profdata output path
+# $3 -- profraw glob
+# $4 -- zip filename
+# $5 -- output directory
+
+bin_path="$1"
+profdata_path="$2"
+profraw_glob="$3"
+zip_name="$4"
+out_dir="$5"
+
+# shellcheck disable=SC2086
+profraw_files=$(ls $profraw_glob 2>/dev/null || true)
+if [ -z "$profraw_files" ]; then
+  printf "0\n" > "$out_dir/$zip_name.covinfo"
+  exit 0
+fi
+
+# shellcheck disable=SC2086
+llvm-profdata merge -sparse $profraw_glob -o "$profdata_path"
+
+percent=$(llvm-cov report "$bin_path" -instr-profile="$profdata_path" 2>/dev/null | awk '
+  /ZIPFoundation/ {
+    if (match($0, /([0-9]+(\.[0-9]+)?)%/, m)) {
+      sum += m[1]
+      n += 1
+    }
+  }
+  END {
+    if (n > 0) {
+      printf "%.2f", sum / n
+    }
+  }
+')
+
+if [ -z "$percent" ]; then
+  percent=$(llvm-cov report "$bin_path" -instr-profile="$profdata_path" 2>/dev/null | awk '/TOTAL/ {gsub("%", "", $NF); print $NF; exit}')
+fi
+
+if [ -z "$percent" ]; then
+  percent="0"
+fi
+
+printf "%s\n" "$percent" > "$out_dir/$zip_name.covinfo"

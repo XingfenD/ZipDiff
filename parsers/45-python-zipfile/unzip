@@ -1,3 +1,12 @@
 #!/bin/sh
 
-python /unzip.py "$@"
+set -eu
+
+filename=$(basename "$1")
+cov_file=$(mktemp /tmp/coverage.XXXXXX)
+
+trap 'rm -f "$cov_file"' EXIT
+
+python -m coverage run --data-file="$cov_file" --source=zipfile /unzip.py "$1" "$2"
+
+/coverage.sh "$cov_file" "$filename" "$2/.."
