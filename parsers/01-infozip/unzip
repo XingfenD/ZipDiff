@@ -12,12 +12,28 @@ set -eu
 
 filename=$(basename "$1")
 src_dir="/workspace/src"
-executable_path="$src_dir/build-coverage/bins"
-executable="$executable_path/unzzip"
+
+# Info-ZIP `make -f ./unix/Makefile generic` produces `/workspace/src/unzip`.
+# Keep a couple of fallbacks for compatibility with other build layouts.
+executable=""
+for candidate in \
+    "$src_dir/unzip" \
+    "$src_dir/build-coverage/bins/unzip" \
+    "$src_dir/build-coverage/bins/unzzip"
+do
+    if [ -x "$candidate" ]; then
+        executable="$candidate"
+        break
+    fi
+done
+
+if [ -z "$executable" ]; then
+    echo "[ERROR] unzip executable not found under $src_dir" >&2
+    exit 1
+fi
 
 find "$src_dir" -name "*.gcda" -delete
 cd "$2"
 "$executable" "$1"
 
 /workspace/coverage.sh "$src_dir" "$filename" "$2/.."
-
