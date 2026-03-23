@@ -49,6 +49,11 @@ pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
         .stop_after_seconds
         .map(|secs| Instant::now() + Duration::from_secs(secs));
 
+    let mut hash_ignore = opts.hash_ignore;
+    if hash_ignore.is_empty() {
+        hash_ignore.push("coverage".to_string());
+    }
+
     Config {
         batch_size,
         parsers: parser_map.into_keys().collect(),
@@ -58,7 +63,7 @@ pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
         samples_dir,
         results_dir,
         stats_file,
-        hash_ignore: opts.hash_ignore,
+        hash_ignore,
         argmax_ucb: opts.argmax_ucb,
         byte_mutation_only: opts.byte_mutation_only,
         stop_at,

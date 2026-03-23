@@ -15,7 +15,13 @@ src_dir="/workspace/src"
 executable="$src_dir/unzip.pl"
 
 echo "Running $executable $1 $2"
-perl -MDevel::Cover=-select,Archive::Zip "$executable" "$1" "$2"
+rm -rf /workspace/cover_db
+perl -MDevel::Cover=-select,Archive::Zip,-db,/workspace/cover_db "$executable" "$1" "$2"
 
-# /workspace/coverage.sh "$src_dir" "$filename" "$2/.."
-/workspace/src/unzip.pl /input/testmake.zip /output/testmake.zip/
+percent=$(cover -report summary -db /workspace/cover_db | sed -n 's/.*\\([0-9][0-9.]*\\)%.*/\\1/p' | head -n 1)
+if [ -z "$percent" ]; then
+    percent="0"
+fi
+
+out_dir="$(dirname "$2")"
+printf "%s\n" "$percent" > "$out_dir/$filename.covinfo"

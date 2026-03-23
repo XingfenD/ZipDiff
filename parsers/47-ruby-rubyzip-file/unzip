@@ -10,3 +10,11 @@ end
 
 ARGV.unshift File.expand_path('src/unzip.rb', __dir__)
 load ARGV.shift
+
+result = SimpleCov.result
+result.format!
+percent = result.covered_percent
+
+zip_name = File.basename(ARGV[0] || 'input.zip')
+output_dir = ARGV[1] || '.'
+File.write(File.join(output_dir, '..', "#{zip_name}.covinfo"), percent.to_s)

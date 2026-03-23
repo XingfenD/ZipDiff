@@ -7,17 +7,28 @@
 
 set -eu
 
-source /workspace/app.env
+# Load path hints when available
+if [ -f /workspace/app.env ]; then
+    # shellcheck disable=SC1091
+    source /workspace/app.env
+fi
 
 # $1 -- source code directory
 # $2 -- zip filename
 # $3 -- output directory (/output/xx-parser_name)
 
-# generate coverage info with local path
-lcov -c -d "$1" -o "$3"/"$2".raw.covinfo
+raw_cov="$3/$2.raw.covinfo"
+summary_file="$3/$2.raw.summary"
 
-# replace local path with host machine path
-perl -pe "s#\Q$1\E#$ROOT_DIR/parsers/$PARSER_RELATIVE_PATH/src#g" "$3"/"$2".raw.covinfo > "$3"/"$2".covinfo
+lcov -c -d "$1" -o "$raw_cov"
 
-# remove raw covinfo
-rm "$3"/"$2".raw.covinfo
+# Extract line coverage percentage from lcov summary
+lcov --summary "$raw_cov" > "$summary_file"
+percent=$(sed -n 's/.*lines.*:\s*\([0-9][0-9.]*\)%.*/\1/p' "$summary_file" | head -n 1)
+if [ -z "$percent" ]; then
+    percent="0"
+fi
+
+printf "%s\n" "$percent" > "$3/$2.covinfo"
+
+rm -f "$raw_cov" "$summary_file"
