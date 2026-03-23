@@ -3,3 +3,6 @@ docker-compose.yml
 */parallel-unzip-all.sh
 */testcase.sh
 !parsers.json
+
+**/src/
+**/app.env
