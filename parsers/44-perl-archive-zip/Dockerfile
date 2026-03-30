@@ -8,6 +8,6 @@ RUN cpanm --notest Devel::Cover
 
 COPY unzip.pl /workspace/src/
 
-COPY unzip unzip-all.sh /workspace/
+COPY unzip unzip-all.sh coverage.sh app.env /workspace/
 
 ENTRYPOINT [ "/workspace/unzip-all.sh" ]

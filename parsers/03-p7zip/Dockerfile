@@ -12,16 +12,18 @@ WORKDIR /workspace
 
 # Build p7zip from source with gcov instrumentation so coverage reflects
 # parser internals rather than only wrapper scripts.
-RUN git clone --depth 1 --branch v17.06 https://github.com/p7zip-project/p7zip.git src && \
+RUN for i in 1 2 3 4 5; do \
+        git clone --depth 1 --branch v17.06 https://github.com/p7zip-project/p7zip.git src && break; \
+        echo "git clone failed (attempt $i), retrying..." >&2; \
+        rm -rf src; \
+        sleep 3; \
+    done && \
+    test -d src && \
     cd /workspace/src && \
     (make clean || true) && \
-    make 7za \
-        CFLAGS="-O0 -g --coverage" \
-        CXXFLAGS="-O0 -g --coverage" \
-        LDFLAGS="--coverage" \
-        CFLAGS_BASE="-O0 -g --coverage" \
-        CXXFLAGS_BASE="-O0 -g --coverage" \
-        LDFLAGS_BASE="--coverage"
+    mkdir -p /workspace/src/bin && \
+    cd /workspace/src/CPP/7zip/Bundles/Alone && \
+    make
 
 COPY unzip unzip-all.sh coverage.sh app.env /workspace/
 

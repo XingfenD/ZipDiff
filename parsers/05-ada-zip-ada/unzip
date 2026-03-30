@@ -13,8 +13,11 @@ set -eu
 filename=$(basename "$1")
 src_dir="/workspace/src"
 executable="$src_dir/unzipada"
+zip_dir=$(dirname "$1")
+zip_file=$(basename "$1")
 
 find "$src_dir" -name "*.gcda" -delete
-"$executable" -o "$1" -d "$2"
+mkdir -p "$2"
+(cd "$zip_dir" && "$executable" -d "$2" "$zip_file")
 
 /workspace/coverage.sh "$src_dir" "$filename" "$2/.."

@@ -35,14 +35,17 @@ RUN cmake --build build --config Debug -j$(nproc)
 
 WORKDIR /workspace
 COPY unzip.cpp /workspace/
-RUN g++ /workspace/unzip.cpp \
-    -O0 -g --coverage \
-    -I/poco/Foundation/include \
-    -I/poco/Zip/include \
-    -o /workspace/unzip-bin \
-    /poco/build/lib/libPocoZip.a \
-    /poco/build/lib/libPocoFoundation.a \
-    -lz -lpthread --coverage
+RUN ZIP_LIB=$(find /poco/build -type f -name 'libPocoZip*.a' | head -n 1) && \
+    FOUNDATION_LIB=$(find /poco/build -type f -name 'libPocoFoundation*.a' | head -n 1) && \
+    test -n "$ZIP_LIB" && test -n "$FOUNDATION_LIB" && \
+    g++ /workspace/unzip.cpp \
+        -O0 -g --coverage \
+        -I/poco/Foundation/include \
+        -I/poco/Zip/include \
+        -o /workspace/unzip-bin \
+        "$ZIP_LIB" \
+        "$FOUNDATION_LIB" \
+        -lz -lpthread --coverage
 
 COPY unzip unzip-all.sh coverage.sh app.env /workspace/
 

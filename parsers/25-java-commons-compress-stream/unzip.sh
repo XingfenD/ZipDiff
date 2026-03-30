@@ -1,3 +1,3 @@
 #!/bin/sh
 
-java -jar /unzip.jar "$1" "$2"
+java -jar /workspace/unzip.jar "$1" "$2"

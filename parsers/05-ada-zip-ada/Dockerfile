@@ -24,4 +24,4 @@ FROM pre_build as build
 RUN cd src && gprbuild -p -P zipada.gpr -XZip_Build_Mode=Coverage
 COPY unzip unzip-all.sh coverage.sh /workspace
 
-ENTRYPOINT ["/unzip-all.sh"]
+ENTRYPOINT ["/workspace/unzip-all.sh"]

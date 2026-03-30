@@ -2,7 +2,7 @@ FROM rust:1.85-slim-bookworm
 
 WORKDIR /workspace/src
 
-RUN cargo init
+RUN cargo init --name unzip
 RUN cargo add zip@0.6.6
 RUN rustup component add llvm-tools-preview
 

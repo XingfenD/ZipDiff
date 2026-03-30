@@ -1,13 +1,21 @@
-FROM php:8.3-cli-alpine
+FROM alpine:3.20
 
 WORKDIR /src
 
-RUN apk add --no-cache $PHPIZE_DEPS
-RUN pecl install xdebug
-RUN docker-php-ext-enable xdebug
-RUN apk del $PHPIZE_DEPS
-
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories && \
+    apk add --no-cache \
+        php83 \
+        php83-phar \
+        php83-openssl \
+        php83-mbstring \
+        php83-xml \
+        php83-tokenizer \
+        php83-session \
+        php83-dom \
+        php83-zip \
+        php83-pecl-xdebug \
+        composer
+RUN ln -sf /usr/bin/php83 /usr/bin/php
 RUN composer require nelexa/zip:4.0.2
 
 COPY unzip.php /src/unzip.php

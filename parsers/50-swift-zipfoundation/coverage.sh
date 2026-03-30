@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -eu
+set -u
 
 # $1 -- instrumented binary path
 # $2 -- profdata output path
@@ -21,26 +21,24 @@ if [ -z "$profraw_files" ]; then
   exit 0
 fi
 
-# shellcheck disable=SC2086
-llvm-profdata merge -sparse $profraw_glob -o "$profdata_path"
-
-percent=$(llvm-cov report "$bin_path" -instr-profile="$profdata_path" 2>/dev/null | awk '
-  /ZIPFoundation/ {
-    if (match($0, /([0-9]+(\.[0-9]+)?)%/, m)) {
-      sum += m[1]
-      n += 1
-    }
-  }
-  END {
-    if (n > 0) {
-      printf "%.2f", sum / n
-    }
-  }
-')
-
-if [ -z "$percent" ]; then
-  percent=$(llvm-cov report "$bin_path" -instr-profile="$profdata_path" 2>/dev/null | awk '/TOTAL/ {gsub("%", "", $NF); print $NF; exit}')
+if ! command -v llvm-profdata >/dev/null 2>&1 || ! command -v llvm-cov >/dev/null 2>&1; then
+  printf "0\n" > "$out_dir/$zip_name.covinfo"
+  exit 0
 fi
+
+# shellcheck disable=SC2086
+if ! llvm-profdata merge -sparse $profraw_glob -o "$profdata_path" >/dev/null 2>&1; then
+  printf "0\n" > "$out_dir/$zip_name.covinfo"
+  exit 0
+fi
+
+percent=$(llvm-cov report "$bin_path" -instr-profile="$profdata_path" 2>/dev/null | awk '/TOTAL/ {gsub("%", "", $NF); print $NF; exit}')
+
+case "$percent" in
+  ''|*[!0-9.]*)
+    percent="0"
+    ;;
+esac
 
 if [ -z "$percent" ]; then
   percent="0"

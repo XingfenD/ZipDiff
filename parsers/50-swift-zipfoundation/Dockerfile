@@ -4,7 +4,8 @@ COPY src /src
 WORKDIR /src
 
 RUN swift build -c release -Xswiftc -profile-generate -Xswiftc -profile-coverage-mapping
-RUN mv "$(swift build -c release --show-bin-path)/unzip" /workspace/unzip-bin
+RUN mkdir -p /workspace && \
+    cp "$(swift build -c release --show-bin-path)/unzip" /workspace/unzip-bin
 
 WORKDIR /workspace
 

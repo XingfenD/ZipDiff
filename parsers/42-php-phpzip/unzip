@@ -3,7 +3,7 @@
 set -eu
 
 filename=$(basename "$1")
-coverage_json=$(mktemp /tmp/phpcov.XXXXXX.json)
+coverage_json=$(mktemp 2>/dev/null || mktemp -t phpcov)
 
 trap 'rm -f "$coverage_json"' EXIT
 

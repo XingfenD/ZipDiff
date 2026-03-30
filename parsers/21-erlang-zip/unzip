@@ -30,6 +30,6 @@ case cover:analyse(zip, module) of
         io:format(\"ANALYSE_ERROR:~p~n\", [AnalyseError]),
         erlang:halt(2)
 end.
-" -s init stop)
+" -s init stop 2>/dev/null || true)
 
 /workspace/coverage.sh "$coverage_result" "$filename" "$out_dir"

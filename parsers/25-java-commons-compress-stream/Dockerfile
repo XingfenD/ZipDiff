@@ -14,6 +14,7 @@ WORKDIR /workspace
 
 COPY --from=build /unzip/build/libs/unzip.jar /workspace/unzip.jar
 COPY --from=build /tools /tools
-COPY unzip-wrapper unzip-all.sh coverage.sh app.env /workspace/
+COPY unzip-wrapper /workspace/unzip
+COPY unzip-all.sh coverage.sh app.env /workspace/
 
 ENTRYPOINT ["/workspace/unzip-all.sh"]

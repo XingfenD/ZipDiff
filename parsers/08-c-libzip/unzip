@@ -12,9 +12,29 @@ set -eu
 
 filename=$(basename "$1")
 src_dir="/workspace/src"
-executable="$src_dir/build-coverage/src/bsdunzip"
+ziptool="$src_dir/build-coverage/src/ziptool"
 
 find "$src_dir" -name "*.gcda" -delete
-"$executable" -o -d $2 $1
+count=$("$ziptool" "$1" get_num_entries 0 | sed -n 's/^\([0-9][0-9]*\).*/\1/p')
+if [ -z "$count" ]; then
+    count=0
+fi
+i=0
+while [ "$i" -lt "$count" ]; do
+    stat_out=$("$ziptool" "$1" stat "$i")
+    name=$(printf "%s\n" "$stat_out" | sed -n "s/^name: '\\(.*\\)'$/\\1/p" | head -n 1)
+    if [ -n "$name" ]; then
+        case "$name" in
+            */)
+                mkdir -p "$2/$name"
+                ;;
+            *)
+                mkdir -p "$(dirname "$2/$name")"
+                "$ziptool" "$1" cat "$i" > "$2/$name"
+                ;;
+        esac
+    fi
+    i=$((i + 1))
+done
 
 /workspace/coverage.sh "$src_dir" "$filename" "$2/.."

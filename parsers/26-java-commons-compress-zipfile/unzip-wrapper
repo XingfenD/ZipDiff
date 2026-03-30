@@ -3,7 +3,7 @@
 set -eu
 
 filename=$(basename "$1")
-cov_dir=$(mktemp -d /tmp/jacoco.XXXXXX)
+cov_dir=$(mktemp -d 2>/dev/null || mktemp -d -t jacoco)
 exec_file="$cov_dir/jacoco.exec"
 
 trap 'rm -rf "$cov_dir"' EXIT
@@ -11,4 +11,4 @@ trap 'rm -rf "$cov_dir"' EXIT
 java -javaagent:/tools/jacocoagent.jar=destfile="$exec_file",append=false,includes=org/codehaus/plexus/archiver/zip/* \
     -jar /workspace/unzip.jar "$1" "$2"
 
-/workspace/coverage.sh "$exec_file" "org/codehaus/plexus/archiver/zip" "$filename" "$2/.."
+/workspace/coverage.sh "$exec_file" "org/codehaus/plexus/archiver/zip" "$filename" "$2/.." || printf "0\n" > "$2/../$filename.covinfo"

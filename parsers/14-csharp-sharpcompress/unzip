@@ -3,17 +3,21 @@
 set -eu
 
 filename=$(basename "$1")
-cov_dir=$(mktemp -d /tmp/cov.XXXXXX)
+cov_dir=$(mktemp -d 2>/dev/null || mktemp -d -t cov)
 cov_prefix="$cov_dir/coverage"
-target_args="/workspace/build/unzip.dll \"$1\" \"$2\""
+target_args="/build/unzip.dll \"$1\" \"$2\""
 
 trap 'rm -rf "$cov_dir"' EXIT
 
-/tools/coverlet /workspace/build/unzip.dll \
+/tools/coverlet /build/unzip.dll \
     --target dotnet \
     --targetargs "$target_args" \
     --format cobertura \
     --output "$cov_prefix" \
-    --include "[SharpCompress*]*" >/dev/null
+    --include "[SharpCompress*]*" >/dev/null 2>&1 || {
+    dotnet /build/unzip.dll "$1" "$2"
+    printf "0\n" > "$2/../$filename.covinfo"
+    exit 0
+}
 
-/workspace/coverage.sh "$cov_prefix.cobertura.xml" "SharpCompress" "$filename" "$2/.."
+/workspace/coverage.sh "$cov_prefix.cobertura.xml" "SharpCompress" "$filename" "$2/.." || printf "0\n" > "$2/../$filename.covinfo"

@@ -10,7 +10,13 @@ cov_file="$1"
 zip_name="$2"
 out_dir="$3"
 
-percent=$(python -m coverage report --data-file="$cov_file" -m zipfile.py 2>/dev/null | awk 'END {print $(NF-1)}' | tr -d '%')
+percent=$(python -m coverage report --data-file="$cov_file" -m 2>/dev/null | awk '/^TOTAL/ {gsub("%", "", $NF); print $NF; exit}')
+
+case "$percent" in
+    ''|*[!0-9.]*)
+        percent="0"
+        ;;
+esac
 
 if [ -z "$percent" ]; then
     percent="0"

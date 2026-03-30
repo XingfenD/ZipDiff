@@ -2,8 +2,9 @@ FROM python:3.13.0-alpine
 
 RUN pip install --no-cache-dir coverage==7.8.0
 
-COPY unzip.py /
+WORKDIR /workspace
 
-COPY unzip unzip-all.sh coverage.sh app.env /
+COPY unzip.py /workspace/
+COPY unzip unzip-all.sh coverage.sh app.env /workspace/
 
-ENTRYPOINT [ "/unzip-all.sh" ]
+ENTRYPOINT [ "/workspace/unzip-all.sh" ]

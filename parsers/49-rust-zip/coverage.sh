@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -eu
+set -u
 
 # $1 -- instrumented binary path
 # $2 -- profdata output path
@@ -21,8 +21,16 @@ if [ -z "$profraw_files" ]; then
   exit 0
 fi
 
+if ! command -v llvm-profdata >/dev/null 2>&1 || ! command -v llvm-cov >/dev/null 2>&1; then
+  printf "0\n" > "$out_dir/$zip_name.covinfo"
+  exit 0
+fi
+
 # shellcheck disable=SC2086
-llvm-profdata merge -sparse $profraw_glob -o "$profdata_path"
+if ! llvm-profdata merge -sparse $profraw_glob -o "$profdata_path" >/dev/null 2>&1; then
+  printf "0\n" > "$out_dir/$zip_name.covinfo"
+  exit 0
+fi
 
 percent=$(llvm-cov report "$bin_path" -instr-profile="$profdata_path" 2>/dev/null | awk '
   /zip-0\.6\.6\// {

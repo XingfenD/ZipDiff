@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -eu
+set -u
 
 # $1 -- coverage xml file
 # $2 -- package/assembly prefix
@@ -12,14 +12,7 @@ package_prefix="$2"
 zip_name="$3"
 out_dir="$4"
 
-line_rate=$(awk -v key="$package_prefix" '
-    match($0, /<package name="([^"]+)"[^>]*line-rate="([0-9.]+)"/, m) {
-        if (index(m[1], key) == 1) {
-            print m[2]
-            exit
-        }
-    }
-' "$coverage_xml")
+line_rate=$(sed -n "s/.*<package name=\"${package_prefix}[^\"]*\"[^>]*line-rate=\"\\([0-9.]*\\)\".*/\\1/p" "$coverage_xml" | head -n 1)
 
 if [ -z "$line_rate" ]; then
     line_rate=$(sed -n 's/.*<coverage[^>]*line-rate="\([0-9.]*\)".*/\1/p' "$coverage_xml" | head -n 1)

@@ -3,7 +3,7 @@
 set -eu
 
 filename=$(basename "$1")
-cov_dir=$(mktemp -d /tmp/jacoco.XXXXXX)
+cov_dir=$(mktemp -d 2>/dev/null || mktemp -d -t jacoco)
 exec_file="$cov_dir/jacoco.exec"
 
 trap 'rm -rf "$cov_dir"' EXIT
