@@ -26,6 +26,14 @@ if ! command -v llvm-profdata >/dev/null 2>&1 || ! command -v llvm-cov >/dev/nul
   exit 0
 fi
 
+# Ensure rust-bundled LLVM shared libs are discoverable.
+if command -v rustc >/dev/null 2>&1; then
+  sysroot=$(rustc --print sysroot 2>/dev/null || true)
+  if [ -n "$sysroot" ]; then
+    export LD_LIBRARY_PATH="$sysroot/lib/rustlib/x86_64-unknown-linux-gnu/lib:${LD_LIBRARY_PATH:-}"
+  fi
+fi
+
 # shellcheck disable=SC2086
 if ! llvm-profdata merge -sparse $profraw_glob -o "$profdata_path" >/dev/null 2>&1; then
   printf "0\n" > "$out_dir/$zip_name.covinfo"
@@ -47,7 +55,21 @@ percent=$(llvm-cov report "$bin_path" -instr-profile="$profdata_path" 2>/dev/nul
 ')
 
 if [ -z "$percent" ]; then
-  percent=$(llvm-cov report "$bin_path" -instr-profile="$profdata_path" 2>/dev/null | awk '/TOTAL/ {gsub("%", "", $NF); print $NF; exit}')
+  percent=$(llvm-cov report "$bin_path" -instr-profile="$profdata_path" 2>/dev/null | awk '
+    /^TOTAL/ {
+      c=0
+      for (i=1; i<=NF; i++) {
+        if ($i ~ /^[0-9]+(\.[0-9]+)?%$/) {
+          c++
+          if (c==3) {
+            gsub("%", "", $i)
+            print $i
+            exit
+          }
+        }
+      }
+    }
+  ')
 fi
 
 if [ -z "$percent" ]; then

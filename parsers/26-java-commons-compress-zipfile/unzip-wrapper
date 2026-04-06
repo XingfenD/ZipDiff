@@ -8,7 +8,8 @@ exec_file="$cov_dir/jacoco.exec"
 
 trap 'rm -rf "$cov_dir"' EXIT
 
-java -javaagent:/tools/jacocoagent.jar=destfile="$exec_file",append=false,includes=org/codehaus/plexus/archiver/zip/* \
+java -javaagent:/tools/jacocoagent.jar=destfile="$exec_file",append=false,includes=unzip/* \
     -jar /workspace/unzip.jar "$1" "$2"
 
-/workspace/coverage.sh "$exec_file" "org/codehaus/plexus/archiver/zip" "$filename" "$2/.." || printf "0\n" > "$2/../$filename.covinfo"
+export JACOCO_CLASSFILES="/workspace/classes"
+/workspace/coverage.sh "$exec_file" "unzip" "$filename" "$2/.." || printf "0\n" > "$2/../$filename.covinfo"

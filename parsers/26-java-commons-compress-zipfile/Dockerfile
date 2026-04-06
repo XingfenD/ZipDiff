@@ -13,6 +13,7 @@ FROM eclipse-temurin:21.0.5_11-jre-alpine
 WORKDIR /workspace
 
 COPY --from=build /unzip/build/libs/unzip.jar /workspace/unzip.jar
+COPY --from=build /unzip/build/classes/java/main /workspace/classes
 COPY --from=build /tools /tools
 COPY unzip-wrapper /workspace/unzip
 COPY unzip-all.sh coverage.sh app.env /workspace/

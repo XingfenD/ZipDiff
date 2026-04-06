@@ -18,6 +18,8 @@ FROM mcr.microsoft.com/dotnet/runtime:9.0-alpine
 
 COPY --from=build /unzip/bin/Release/net9.0 /build
 COPY --from=build /tools /tools
+RUN mkdir -p /unzip
+COPY unzip.cs /unzip/unzip.cs
 
 WORKDIR /workspace
 

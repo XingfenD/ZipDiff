@@ -12,9 +12,10 @@ package_prefix="$2"
 zip_name="$3"
 out_dir="$4"
 csv_file="$out_dir/$zip_name.jacoco.csv"
+classfiles_path="${JACOCO_CLASSFILES:-/workspace/unzip.jar}"
 
 java -jar /tools/jacococli.jar report "$exec_file" \
-    --classfiles /workspace/unzip.jar \
+    --classfiles "$classfiles_path" \
     --csv "$csv_file" >/dev/null
 
 percent=$(awk -F',' -v pkg="$package_prefix" '

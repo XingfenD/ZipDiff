@@ -2,7 +2,7 @@
 
 set -eu
 
-# $1 -- simplecov resultset json
+# $1 -- ruby Coverage.result json
 # $2 -- zip filename
 # $3 -- output directory
 
@@ -14,13 +14,13 @@ percent=$(ruby -rjson -e '
 path = "/usr/local/bundle/gems/rubyzip-2.3.2/"
 file = ARGV[0]
 data = JSON.parse(File.read(file))
-entry = data.values.first || {}
-cov = entry["coverage"] || {}
 covered = 0
 total = 0
-cov.each do |k, arr|
+data.each do |k, arr|
   next unless k.include?(path)
-  arr.each do |v|
+  lines = arr.is_a?(Hash) ? arr["lines"] : arr
+  next unless lines.respond_to?(:each)
+  lines.each do |v|
     next if v.nil?
     total += 1
     covered += 1 if v > 0

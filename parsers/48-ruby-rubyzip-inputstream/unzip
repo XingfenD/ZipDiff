@@ -1,21 +1,16 @@
 #!/usr/bin/env ruby
 
-require 'simplecov'
+require 'coverage'
+require 'json'
 
-SimpleCov.start do
-  track_files '**/*.rb'
-  add_group 'App', '/workspace/unzip.rb'
-  add_group 'RubyZip', '/usr/local/bundle/gems/rubyzip-2.3.2'
-  coverage_dir(ARGV[1] + '/coverage')
-end
+Coverage.start(lines: true)
 
 ARGV.unshift('/workspace/unzip.rb')
 load ARGV.shift
 
-result = SimpleCov.result
-result.format!
-
 zip_name = File.basename(ARGV[0] || 'input.zip')
 output_dir = ARGV[1] || '.'
+cov_path = File.join(output_dir, 'coverage.json')
+File.write(cov_path, JSON.dump(Coverage.result))
 
-system('/workspace/coverage.sh', "#{output_dir}/coverage/.resultset.json", zip_name, "#{output_dir}/..")
+system('/workspace/coverage.sh', cov_path, zip_name, "#{output_dir}/..")

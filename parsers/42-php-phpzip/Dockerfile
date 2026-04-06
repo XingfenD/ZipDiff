@@ -15,6 +15,9 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositorie
         php83-zip \
         php83-pecl-xdebug \
         composer
+
+RUN mkdir -p /etc/php83/conf.d && \
+    printf "zend_extension=xdebug.so\nxdebug.mode=coverage\n" > /etc/php83/conf.d/50_xdebug.ini
 RUN ln -sf /usr/bin/php83 /usr/bin/php
 RUN composer require nelexa/zip:4.0.2
 

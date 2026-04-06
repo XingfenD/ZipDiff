@@ -32,7 +32,21 @@ if ! llvm-profdata merge -sparse $profraw_glob -o "$profdata_path" >/dev/null 2>
   exit 0
 fi
 
-percent=$(llvm-cov report "$bin_path" -instr-profile="$profdata_path" 2>/dev/null | awk '/TOTAL/ {gsub("%", "", $NF); print $NF; exit}')
+percent=$(llvm-cov report "$bin_path" -instr-profile="$profdata_path" 2>/dev/null | awk '
+  /^TOTAL/ {
+    c=0
+    for (i=1; i<=NF; i++) {
+      if ($i ~ /^[0-9]+(\.[0-9]+)?%$/) {
+        c++
+        if (c==3) {
+          gsub("%", "", $i)
+          print $i
+          exit
+        }
+      }
+    }
+  }
+')
 
 case "$percent" in
   ''|*[!0-9.]*)

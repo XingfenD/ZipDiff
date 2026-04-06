@@ -10,7 +10,14 @@ db_dir="$1"
 zip_name="$2"
 out_dir="$3"
 
-percent=$(cover -report summary -db "$db_dir" | sed -n 's/.*\([0-9][0-9.]*\)%.*/\1/p' | head -n 1)
+percent=$(cover -report text -db "$db_dir" 2>/dev/null | awk '
+    /^Total[[:space:]]/ {
+        v=$NF
+    }
+    END {
+        if (v ~ /^[0-9]+([.][0-9]+)?$/) print v
+    }
+')
 if [ -z "$percent" ]; then
     percent="0"
 fi
