@@ -1,4 +1,5 @@
 use crate::rand_utils::*;
+use crate::CONFIG;
 use crate::Input;
 use binwrite::BinWrite;
 use blake3::Hash;
@@ -120,10 +121,12 @@ impl Mutator {
         self.bytes_ucb.construct();
     }
 
-    pub fn record_ucb(&mut self, results: &[(Vec<UcbHandle>, bool)]) {
-        for (handles, success) in results {
+    pub fn record_ucb(&mut self, results: &[(Vec<UcbHandle>, bool, f64)]) {
+        for (handles, success, coverage_ratio) in results {
             let trial = 1.0 / handles.len() as f64;
-            let score = if *success { trial } else { 0.0 };
+            let base_score = if *success { trial } else { 0.0 };
+            let coverage_bonus = trial * CONFIG.coverage_ucb_alpha * coverage_ratio;
+            let score = base_score + coverage_bonus;
             for handle in handles {
                 if let Some(id) = handle.zip_id {
                     self.zip_ucb.record(id, trial, score);

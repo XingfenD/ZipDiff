@@ -11,6 +11,7 @@ struct Iteration {
     input_count: usize,
     corpus_size: usize,
     incons_count: usize,
+    avg_coverage_ratio: f64,
     seconds_used: f64,
 }
 
@@ -42,6 +43,7 @@ pub struct Stats {
     // ablation configs
     argmax_ucb: bool,
     byte_mutation_only: bool,
+    coverage_ucb_alpha: f64,
 }
 
 impl Stats {
@@ -56,10 +58,17 @@ impl Stats {
             mutations: None,
             argmax_ucb: CONFIG.argmax_ucb,
             byte_mutation_only: CONFIG.byte_mutation_only,
+            coverage_ucb_alpha: CONFIG.coverage_ucb_alpha,
         }
     }
 
-    pub fn record_iteration(&mut self, new_input_count: usize, corpus: &Corpus, mutator: &Mutator) {
+    pub fn record_iteration(
+        &mut self,
+        new_input_count: usize,
+        corpus: &Corpus,
+        mutator: &Mutator,
+        avg_coverage_ratio: f64,
+    ) {
         self.input_count += new_input_count;
         let mut best_seeds = Vec::new();
         self.best_seed_map = BTreeMap::new();
@@ -86,6 +95,7 @@ impl Stats {
             input_count: self.input_count,
             corpus_size: corpus.len(),
             incons_count: corpus.incons_count(),
+            avg_coverage_ratio,
             seconds_used: self.start_at.elapsed().as_secs_f64(),
         });
         self.consistent_pairs = corpus.consistent_pairs();

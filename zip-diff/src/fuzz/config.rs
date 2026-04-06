@@ -20,6 +20,7 @@ pub struct Config {
     pub hash_ignore: Vec<String>,
     pub argmax_ucb: bool,
     pub byte_mutation_only: bool,
+    pub coverage_ucb_alpha: f64,
     pub stop_at: Option<Instant>,
 }
 
@@ -52,6 +53,9 @@ pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
     let mut hash_ignore = opts.hash_ignore;
     if hash_ignore.is_empty() {
         hash_ignore.push("coverage".to_string());
+        hash_ignore.push(".covinfo".to_string());
+        hash_ignore.push(".jacoco.csv".to_string());
+        hash_ignore.push(".coverage.xml".to_string());
     }
 
     Config {
@@ -66,6 +70,7 @@ pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
         hash_ignore,
         argmax_ucb: opts.argmax_ucb,
         byte_mutation_only: opts.byte_mutation_only,
+        coverage_ucb_alpha: opts.coverage_ucb_alpha,
         stop_at,
     }
 });
@@ -122,6 +127,11 @@ struct Cli {
     /// Use byte-level mutations only without ZIP-level mutations
     #[arg(long, default_value_t = false)]
     byte_mutation_only: bool,
+    /// Coverage bonus coefficient for mutation UCB score.
+    /// final_score = base_score + trial * coverage_ucb_alpha * coverage_ratio
+    /// where coverage_ratio is average covinfo across parsers in [0, 1].
+    #[arg(long, default_value_t = 0.2)]
+    coverage_ucb_alpha: f64,
 }
 
 #[allow(dead_code)]

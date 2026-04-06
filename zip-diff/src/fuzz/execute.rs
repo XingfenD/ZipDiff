@@ -14,7 +14,7 @@ use zstd::Encoder as ZstdEncoder;
 
 // An input is (input sample, mutation names, UCB handles)
 // Returns the number of actually executed (dedupped) inputs.
-pub fn execute(corpus: &mut Corpus, samples: Vec<Sample>) -> Vec<(Vec<UcbHandle>, bool)> {
+pub fn execute(corpus: &mut Corpus, samples: Vec<Sample>) -> Vec<(Vec<UcbHandle>, bool, f64)> {
     save_inputs(&samples);
     let count = samples.len();
     println!("Executing {count} inputs");
@@ -57,7 +57,7 @@ fn run_parsers() {
         .expect("failed to wait for parsers");
 }
 
-fn collect_results(corpus: &mut Corpus, samples: Vec<Sample>) -> Vec<(Vec<UcbHandle>, bool)> {
+fn collect_results(corpus: &mut Corpus, samples: Vec<Sample>) -> Vec<(Vec<UcbHandle>, bool, f64)> {
     samples
         .into_iter()
         .filter_map(|s| {
@@ -72,6 +72,7 @@ fn collect_results(corpus: &mut Corpus, samples: Vec<Sample>) -> Vec<(Vec<UcbHan
             }
             let feat = Feature::par_read(&s.name);
             let interesting = corpus.is_feature_interesting(&feat);
+            let coverage_ratio = read_average_coverage_ratio(&s.name);
             if interesting {
                 fs::create_dir_all(sample_path.parent().unwrap())
                     .expect("failed to create data dir");
@@ -116,9 +117,61 @@ fn collect_results(corpus: &mut Corpus, samples: Vec<Sample>) -> Vec<(Vec<UcbHan
                     !large_outputs.is_empty(),
                 ));
             }
-            Some((s.ucb_handles, interesting))
+            Some((s.ucb_handles, interesting, coverage_ratio))
         })
         .collect()
+}
+
+fn read_average_coverage_ratio(name: &str) -> f64 {
+    let mut sum = 0.0;
+    let mut cnt = 0usize;
+    for parser in &CONFIG.parsers {
+        let covinfo = CONFIG
+            .output_dir
+            .join(parser)
+            .join(format!("{name}.covinfo"));
+        let content = match fs::read_to_string(&covinfo) {
+            Ok(x) => x,
+            Err(_) => continue,
+        };
+        let normalized = match parse_covinfo_ratio(&content) {
+            Some(x) => x,
+            None => continue,
+        };
+        sum += normalized;
+        cnt += 1;
+    }
+    let ratio = if cnt == 0 { 0.0 } else { sum / cnt as f64 };
+    if std::env::var("ZIPDIFF_DEBUG_COVERAGE").as_deref() == Ok("1") {
+        println!("[coverage] sample={name} parsers_with_cov={cnt} avg_ratio={ratio:.4}");
+    }
+    ratio
+}
+
+fn parse_covinfo_ratio(content: &str) -> Option<f64> {
+    let s = content.trim().trim_end_matches('%');
+    let value = s.parse::<f64>().ok()?;
+    Some((value / 100.0).clamp(0.0, 1.0))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_covinfo_ratio;
+
+    #[test]
+    fn parse_covinfo_plain_number() {
+        assert_eq!(parse_covinfo_ratio("12.50"), Some(0.125));
+    }
+
+    #[test]
+    fn parse_covinfo_percent_number() {
+        assert_eq!(parse_covinfo_ratio("12.50%"), Some(0.125));
+    }
+
+    #[test]
+    fn parse_covinfo_invalid() {
+        assert_eq!(parse_covinfo_ratio("N/A"), None);
+    }
 }
 
 fn archive_dir((dest, src): &(impl AsRef<Path>, impl AsRef<Path>)) {

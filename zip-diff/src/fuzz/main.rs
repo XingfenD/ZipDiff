@@ -94,8 +94,13 @@ fn main() {
             corpus.record_selection(index);
         }
         let ucb_results = execute(&mut corpus, samples);
+        let avg_coverage_ratio = if ucb_results.is_empty() {
+            0.0
+        } else {
+            ucb_results.iter().map(|(_, _, c)| *c).sum::<f64>() / ucb_results.len() as f64
+        };
         mutator.record_ucb(&ucb_results);
-        stats.record_iteration(ucb_results.len(), &corpus, &mutator);
+        stats.record_iteration(ucb_results.len(), &corpus, &mutator, avg_coverage_ratio);
         stats.save();
         if let Some(stop_at) = CONFIG.stop_at {
             if Instant::now() > stop_at {
