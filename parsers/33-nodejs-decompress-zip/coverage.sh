@@ -13,18 +13,21 @@ zip_name="$3"
 out_dir="$4"
 report_dir="$(mktemp -d /tmp/c8report.XXXXXX)"
 summary_file="$report_dir/coverage-summary.json"
+prebuilt_summary="$cov_dir/coverage-summary.json"
 
 trap 'rm -rf "$report_dir"' EXIT
 
-if [ -z "$(ls -A "$cov_dir" 2>/dev/null || true)" ]; then
+if [ -f "$prebuilt_summary" ]; then
+    cp "$prebuilt_summary" "$summary_file"
+elif [ -z "$(ls -A "$cov_dir" 2>/dev/null || true)" ]; then
     printf "0\n" > "$out_dir/$zip_name.covinfo"
     exit 0
+else
+    c8 report \
+        --temp-directory "$cov_dir" \
+        --report-dir "$report_dir" \
+        --reporter json-summary >/dev/null 2>&1 || true
 fi
-
-c8 report \
-    --temp-directory "$cov_dir" \
-    --report-dir "$report_dir" \
-    --reporter json-summary >/dev/null 2>&1 || true
 
 if [ ! -f "$summary_file" ]; then
     printf "0\n" > "$out_dir/$zip_name.covinfo"

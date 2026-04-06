@@ -7,7 +7,8 @@ cov_dir=$(mktemp -d /tmp/v8cov.XXXXXX)
 
 trap 'rm -rf "$cov_dir"' EXIT
 
-nyc --exclude-node-modules=false \
+cd /src
+nyc --exclude-node-modules=false --cwd /src \
     --temp-dir "$cov_dir/.nyc_output" \
     --report-dir "$cov_dir" \
     --reporter json-summary \

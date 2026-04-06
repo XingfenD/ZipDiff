@@ -7,9 +7,10 @@ src_dir="/workspace/src"
 
 executable=""
 for candidate in \
-    "$src_dir/bin/7za" \
-    "$src_dir/bin/7z" \
-    "$src_dir/_o/7za"
+    "/workspace/src/bin/7za" \
+    "/workspace/src/bin/7z" \
+    "/usr/bin/7z" \
+    "/usr/bin/7za"
 do
     if [ -x "$candidate" ]; then
         executable="$candidate"

@@ -7,5 +7,10 @@ cov_dir=$(mktemp -d /tmp/v8cov.XXXXXX)
 
 trap 'rm -rf "$cov_dir"' EXIT
 
-NODE_V8_COVERAGE="$cov_dir" node /src/unzip.js "$1" "$2"
+cd /src
+nyc --exclude-node-modules=false --cwd /src \
+    --temp-dir "$cov_dir/.nyc_output" \
+    --report-dir "$cov_dir" \
+    --reporter json-summary \
+    node /src/unzip.js "$1" "$2"
 /workspace/coverage.sh "$cov_dir" "node_modules/decompress-zip/" "$filename" "$2/.."

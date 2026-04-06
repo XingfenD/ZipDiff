@@ -1,6 +1,6 @@
 FROM alpine:3.20
 
-RUN apk add --no-cache g++ make cmake lcov zlib-dev
+RUN apk add --no-cache g++ make cmake lcov gzip zlib-dev
 
 ADD https://github.com/pocoproject/poco/archive/refs/tags/poco-1.13.3-release.tar.gz /tmp/src.tar.gz
 RUN tar xf /tmp/src.tar.gz -C / && mv /poco-* /poco && rm -f /tmp/src.tar.gz

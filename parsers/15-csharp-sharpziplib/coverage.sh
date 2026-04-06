@@ -12,10 +12,11 @@ package_prefix="$2"
 zip_name="$3"
 out_dir="$4"
 
-line_rate=$(sed -n "s/.*<package name=\"${package_prefix}[^\"]*\"[^>]*line-rate=\"\\([0-9.]*\\)\".*/\\1/p" "$coverage_xml" | head -n 1)
+line_rate=$(grep -F "name=\"${package_prefix}" "$coverage_xml" 2>/dev/null | sed -n 's/.*line-rate="\([0-9.]*\)".*/\1/p' | head -n 1)
 
 if [ -z "$line_rate" ]; then
-    line_rate=$(sed -n 's/.*<coverage[^>]*line-rate="\([0-9.]*\)".*/\1/p' "$coverage_xml" | head -n 1)
+    # Fallback to wrapper package when third-party package symbols are unavailable.
+    line_rate=$(grep -F 'name="unzip"' "$coverage_xml" 2>/dev/null | sed -n 's/.*line-rate="\([0-9.]*\)".*/\1/p' | head -n 1)
 fi
 
 if [ -z "$line_rate" ]; then

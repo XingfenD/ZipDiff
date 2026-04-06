@@ -1,10 +1,11 @@
-FROM node:20-alpine
+﻿FROM node:20-alpine
 
 WORKDIR /src
 
 RUN npm init -y
 RUN npm install unzipper@0.12.3
 RUN npm install -g c8@10.1.2
+RUN npm install -g nyc@17.1.0
 
 COPY unzip.js /src/unzip.js
 

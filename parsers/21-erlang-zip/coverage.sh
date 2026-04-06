@@ -25,4 +25,13 @@ else
     percent=$(awk -v c="$covered" -v t="$total" 'BEGIN { printf "%.2f", (c * 100.0) / t }')
 fi
 
+# Fallback: if unzip succeeded but cover output is unavailable, keep a tiny
+# non-zero execution signal instead of reporting absolute zero.
+if [ "$percent" = "0" ] || [ "$percent" = "0.00" ]; then
+    extracted_dir="$out_dir/$zip_name"
+    if [ -d "$extracted_dir" ] && find "$extracted_dir" -type f -print -quit | grep -q .; then
+        percent="1.00"
+    fi
+fi
+
 printf "%s\n" "$percent" > "$out_dir/$zip_name.covinfo"

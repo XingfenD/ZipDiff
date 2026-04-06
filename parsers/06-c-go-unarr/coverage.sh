@@ -7,31 +7,31 @@
 
 set -u
 
-# $1 -- module source directory (/workspace/src)
-# $2 -- go build work directory (contains .gcno for cgo units)
-# $3 -- zip filename
-# $4 -- output directory (/output/xx-parser_name)
+# $1 -- go binary coverage directory (GOCOVERDIR)
+# $2 -- zip filename
+# $3 -- output directory (/output/xx-parser_name)
 
-src_dir="$1"
-work_dir="$2"
-zip_name="$3"
-out_dir="$4"
+cov_dir="$1"
+zip_name="$2"
+out_dir="$3"
 
-raw_cov="$out_dir/$zip_name.raw.covinfo"
-filtered_cov="$out_dir/$zip_name.filtered.covinfo"
-summary_file="$out_dir/$zip_name.raw.summary"
-
-percent="0"
-if lcov -c -d "$work_dir" -o "$raw_cov" >/dev/null 2>&1; then
-    lcov --extract "$raw_cov" "$src_dir/*" -o "$filtered_cov" >/dev/null 2>&1 || cp "$raw_cov" "$filtered_cov"
-    if lcov --summary "$filtered_cov" > "$summary_file" 2>/dev/null; then
-        parsed=$(sed -n 's/.*lines.*:\s*\([0-9][0-9.]*\)%.*/\1/p' "$summary_file" | head -n 1)
-        if [ -n "$parsed" ]; then
-            percent="$parsed"
-        fi
+go_cmd="go"
+if ! command -v "$go_cmd" >/dev/null 2>&1; then
+    if [ -x /usr/local/go/bin/go ]; then
+        go_cmd=/usr/local/go/bin/go
     fi
 fi
 
-printf "%s\n" "$percent" > "$out_dir/$zip_name.covinfo"
+percent=$("$go_cmd" tool covdata func -i "$cov_dir" 2>/dev/null | awk '
+    $1 == "total" {
+        gsub(/%/, "", $NF)
+        print $NF
+        exit
+    }
+')
 
-rm -f "$raw_cov" "$filtered_cov" "$summary_file"
+if [ -z "$percent" ]; then
+    percent="0"
+fi
+
+printf "%s\n" "$percent" > "$out_dir/$zip_name.covinfo"

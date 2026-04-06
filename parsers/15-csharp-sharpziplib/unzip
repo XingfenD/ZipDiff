@@ -5,17 +5,13 @@ set -eu
 filename=$(basename "$1")
 cov_dir=$(mktemp -d 2>/dev/null || mktemp -d -t cov)
 cov_prefix="$cov_dir/coverage"
-target_args="/build/unzip.dll \"$1\" \"$2\""
-export ZIPDIFF_INPUT="$1"
-export ZIPDIFF_OUTPUT="$2"
 
 trap 'rm -rf "$cov_dir"' EXIT
 
-/tools/coverlet /build/unzip.dll \
-    --target dotnet \
-    --targetargs "$target_args" \
-    --format cobertura \
-    --output "$cov_prefix" >/dev/null 2>&1 || {
+/tools/dotnet-coverage collect \
+    dotnet /build/unzip.dll "$1" "$2" \
+    -f cobertura \
+    -o "$cov_prefix.cobertura.xml" >/dev/null 2>&1 || {
     dotnet /build/unzip.dll "$1" "$2"
     printf "0\n" > "$2/../$filename.covinfo"
     exit 0

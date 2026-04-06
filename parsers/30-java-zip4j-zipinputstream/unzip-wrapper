@@ -8,7 +8,21 @@ exec_file="$cov_dir/jacoco.exec"
 
 trap 'rm -rf "$cov_dir"' EXIT
 
-java -javaagent:/tools/jacocoagent.jar=destfile="$exec_file",append=false,includes=net/lingala/zip4j/* \
+java_bin="${JAVA_BIN:-}"
+if [ -z "$java_bin" ]; then
+    for candidate in /opt/java/openjdk/bin/java /usr/bin/java java; do
+        if command -v "$candidate" >/dev/null 2>&1; then
+            java_bin="$candidate"
+            break
+        fi
+    done
+fi
+if [ -z "$java_bin" ]; then
+    echo "java not found" >&2
+    exit 1
+fi
+
+"$java_bin" -javaagent:/tools/jacocoagent.jar=destfile="$exec_file",append=false,includes=net/lingala/zip4j/* \
     -jar /workspace/unzip.jar "$1" "$2"
 
-/workspace/coverage.sh "$exec_file" "net/lingala/zip4j" "$filename" "$2/.."
+/workspace/coverage.sh "$exec_file" "net/lingala/zip4j" "$filename" "$2/.." "^net\\.lingala\\.zip4j\\.(io\\.inputstream|headers|model(\\.enums)?|util)$"

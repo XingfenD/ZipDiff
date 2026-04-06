@@ -11,12 +11,7 @@ RUN mkdir -p /workspace/.gocache
 RUN cd /workspace/src && \
     GOCACHE=/workspace/.gocache \
     CGO_ENABLED=1 \
-    CGO_CFLAGS="-O0 -g --coverage" \
-    CGO_CXXFLAGS="-O0 -g --coverage" \
-    CGO_LDFLAGS="--coverage" \
-    sh -c 'build_log=$(go build -work -x -o /workspace/unarr ./cmd/unarr 2>&1) && \
-    printf "%s\n" "$build_log" > /workspace/build.log && \
-    printf "%s\n" "$build_log" | sed -n "s/^WORK=//p" | head -n 1 > /workspace/go-workdir.txt'
+    go build -cover -coverpkg=./... -o /workspace/unarr ./cmd/unarr
 
 COPY unzip unzip-all.sh coverage.sh app.env /workspace/
 

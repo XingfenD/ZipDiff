@@ -4,7 +4,9 @@ set -eu
 
 filename=$(basename "$1")
 out_dir="$2/.."
+src_dir="/workspace"
 
-coverage_output=$(/workspace/unzip-bin "$1" "$2" 2>&1)
+find "$src_dir" -name "*.gcda" -delete
+/workspace/unzip-bin "$1" "$2"
 
-/workspace/coverage.sh "$coverage_output" "$filename" "$out_dir"
+sh /workspace/coverage.sh "$src_dir" "$filename" "$out_dir"

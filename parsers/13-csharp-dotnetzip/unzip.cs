@@ -1,4 +1,5 @@
 using Ionic.Zip;
+using System.IO;
 
 internal static class Program
 {
@@ -14,12 +15,45 @@ internal static class Program
             return 1;
         }
 
+        Directory.CreateDirectory(outputPath);
         using (ZipFile zip = ZipFile.Read(inputPath))
         {
-            zip.ExtractAll(outputPath, ExtractExistingFileAction.OverwriteSilently);
+            foreach (ZipEntry entry in zip)
+            {
+                if (!TryExtractEntry(entry, outputPath))
+                {
+                    return 1;
+                }
+            }
         }
 
         return 0;
+    }
+
+    private static bool TryExtractEntry(ZipEntry entry, string outputPath)
+    {
+        try
+        {
+            entry.Extract(outputPath, ExtractExistingFileAction.OverwriteSilently);
+            return true;
+        }
+        catch (ArgumentException)
+        {
+            // DotNetZip can emit invalid Linux file attributes for some inputs.
+            // Retry once with normalized attributes.
+            try
+            {
+                entry.Attributes = entry.IsDirectory
+                    ? FileAttributes.Directory
+                    : FileAttributes.Normal;
+                entry.Extract(outputPath, ExtractExistingFileAction.OverwriteSilently);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 
     private static bool TryResolvePaths(string[] args, out string inputPath, out string outputPath)

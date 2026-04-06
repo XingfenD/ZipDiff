@@ -42,8 +42,15 @@ fi
 
 percent=$(llvm-cov report "$bin_path" -instr-profile="$profdata_path" 2>/dev/null | awk '
   /zip-0\.6\.6\// {
-    if (match($0, /([0-9]+(\.[0-9]+)?)%/, m)) {
-      sum += m[1]
+    v = ""
+    for (i = 1; i <= NF; i++) {
+      if ($i ~ /%$/) {
+        v = $i
+      }
+    }
+    if (v != "") {
+      gsub("%", "", v)
+      sum += v
       n += 1
     }
   }
@@ -57,16 +64,16 @@ percent=$(llvm-cov report "$bin_path" -instr-profile="$profdata_path" 2>/dev/nul
 if [ -z "$percent" ]; then
   percent=$(llvm-cov report "$bin_path" -instr-profile="$profdata_path" 2>/dev/null | awk '
     /^TOTAL/ {
-      c=0
-      for (i=1; i<=NF; i++) {
-        if ($i ~ /^[0-9]+(\.[0-9]+)?%$/) {
-          c++
-          if (c==3) {
-            gsub("%", "", $i)
-            print $i
-            exit
-          }
+      v = ""
+      for (i = 1; i <= NF; i++) {
+        if ($i ~ /%$/) {
+          v = $i
         }
+      }
+      if (v != "") {
+        gsub("%", "", v)
+        print v
+        exit
       }
     }
   ')

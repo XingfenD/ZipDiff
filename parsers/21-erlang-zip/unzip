@@ -7,29 +7,32 @@ out_dir="$2/.."
 
 cd "$2"
 
-coverage_result=$(erl -noshell -eval "
+coverage_result=$(ZIP_PATH="$1" erl -noshell -eval '
+Zip = os:getenv("ZIP_PATH"),
 cover:start(),
-case cover:compile_beam(zip) of
-    {ok, zip} -> ok;
-    {ok, zip, _Warnings} -> ok;
-    Error ->
-        io:format(\"ERROR:~p~n\", [Error]),
-        erlang:halt(2)
-end,
-case zip:unzip(\"$1\") of
+CompileResult = cover:compile_beam(zip),
+case zip:unzip(Zip) of
     {ok, _} -> ok;
     {error, Reason} ->
-        io:format(\"UNZIP_ERROR:~p~n\", [Reason]),
+        io:format("UNZIP_ERROR:~p~n", [Reason]),
         erlang:halt(1)
 end,
-case cover:analyse(zip, module) of
-    {ok, {Covered, NotCovered}} ->
-        io:format(\"COVERED=~B NOT_COVERED=~B~n\", [Covered, NotCovered]),
+case cover:analyse(zip, calls, line) of
+    {ok, LineCalls} ->
+        {Covered, NotCovered} =
+            lists:foldl(
+                fun({_, Calls}, {C, N}) when Calls > 0 -> {C + 1, N};
+                   ({_, _Calls}, {C, N}) -> {C, N + 1}
+                end,
+                {0, 0},
+                LineCalls
+            ),
+        io:format("COVERED=~B NOT_COVERED=~B COMPILE=~p~n", [Covered, NotCovered, CompileResult]),
         erlang:halt(0);
     AnalyseError ->
-        io:format(\"ANALYSE_ERROR:~p~n\", [AnalyseError]),
+        io:format("ANALYSE_ERROR:~p COMPILE=~p~n", [AnalyseError, CompileResult]),
         erlang:halt(2)
 end.
-" -s init stop 2>/dev/null || true)
+' -s init stop 2>&1 || true)
 
 /workspace/coverage.sh "$coverage_result" "$filename" "$out_dir"

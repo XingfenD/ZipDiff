@@ -9,17 +9,32 @@ set -eu
 
 exec_file="$1"
 package_prefix="$2"
+dot_package_prefix=$(printf '%s' "$package_prefix" | tr '/' '.')
 zip_name="$3"
 out_dir="$4"
 csv_file="$out_dir/$zip_name.jacoco.csv"
 classfiles_path="${JACOCO_CLASSFILES:-/workspace/unzip.jar}"
 
-java -jar /tools/jacococli.jar report "$exec_file" \
+java_bin="${JAVA_BIN:-}"
+if [ -z "$java_bin" ]; then
+    for candidate in /opt/java/openjdk/bin/java /usr/bin/java java; do
+        if command -v "$candidate" >/dev/null 2>&1; then
+            java_bin="$candidate"
+            break
+        fi
+    done
+fi
+if [ -z "$java_bin" ]; then
+    printf "0\n" > "$out_dir/$zip_name.covinfo"
+    exit 0
+fi
+
+"$java_bin" -jar /tools/jacococli.jar report "$exec_file" \
     --classfiles "$classfiles_path" \
     --csv "$csv_file" >/dev/null
 
-percent=$(awk -F',' -v pkg="$package_prefix" '
-    NR > 1 && index($2, pkg) == 1 {
+percent=$(awk -F',' -v pkg="$package_prefix" -v dpkg="$dot_package_prefix" '
+    NR > 1 && (index($2, pkg) == 1 || index($2, dpkg) == 1) {
         missed += $8
         covered += $9
         found = 1
@@ -51,3 +66,4 @@ fi
 
 printf "%s\n" "$percent" > "$out_dir/$zip_name.covinfo"
 rm -f "$csv_file"
+
