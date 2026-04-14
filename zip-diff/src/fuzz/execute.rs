@@ -72,7 +72,12 @@ fn collect_results(corpus: &mut Corpus, samples: Vec<Sample>) -> Vec<(Vec<UcbHan
             }
             let feat = Feature::par_read(&s.name);
             let interesting = corpus.is_feature_interesting(&feat);
-            let coverage_ratio = read_average_coverage_ratio(&s.name);
+            let raw_coverage = read_average_coverage_ratio(&s.name);
+            // Blend: divergence carries 70% weight, raw coverage 30%.
+            // Divergence is the primary signal (directly measures parser disagreement);
+            // raw coverage retains a small gradient for samples that stress parsers
+            // without yet producing disagreement.
+            let coverage_ratio = 0.7 * divergence_ratio(&feat) + 0.3 * raw_coverage;
             if interesting {
                 fs::create_dir_all(sample_path.parent().unwrap())
                     .expect("failed to create data dir");
@@ -146,6 +151,12 @@ fn read_average_coverage_ratio(name: &str) -> f64 {
         println!("[coverage] sample={name} parsers_with_cov={cnt} avg_ratio={ratio:.4}");
     }
     ratio
+}
+
+fn divergence_ratio(feat: &Feature) -> f64 {
+    let n = CONFIG.parsers.len();
+    let total_pairs = (n * (n - 1) / 2).max(1);
+    feat.inconsistency.count_ones(..) as f64 / total_pairs as f64
 }
 
 fn parse_covinfo_ratio(content: &str) -> Option<f64> {

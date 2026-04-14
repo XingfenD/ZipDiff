@@ -4,3 +4,4 @@
 *.pdf
 /temp
 tools/scripts_for_parsers/app.env
+CLAUDE.md
