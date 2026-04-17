@@ -17,17 +17,46 @@ use zstd::Encoder as ZstdEncoder;
 pub fn execute(corpus: &mut Corpus, samples: Vec<Sample>) -> Vec<(Vec<UcbHandle>, bool, f64)> {
     save_inputs(&samples);
     let count = samples.len();
-    println!("Executing {count} inputs");
-    let start = Instant::now();
+    let batch_start = Instant::now();
+    println!("[batch] executing {count} inputs");
+
+    // Log which parsers are expected
+    let debug_parsers = std::env::var("ZIPDIFF_DEBUG_PARSERS").as_deref() == Ok("1");
+    if debug_parsers {
+        println!("[batch] parsers: {}", CONFIG.parsers.join(", "));
+    }
+
     run_parsers();
+
+    let elapsed = batch_start.elapsed().as_secs_f64();
+    println!("[batch] docker compose finished in {elapsed:.1}s");
+
+    // Report how many parsers produced output
+    let outputs_found = CONFIG
+        .parsers
+        .iter()
+        .filter(|p| CONFIG.output_dir.join(p).exists())
+        .count();
     println!(
-        "Finished executing {count} inputs in {:.3} seconds",
-        start.elapsed().as_secs_f64()
+        "[batch] parsers with output: {outputs_found}/{total}",
+        total = CONFIG.parsers.len()
     );
+
+    // Warn about parsers that produced no output at all
+    let missing: Vec<&str> = CONFIG
+        .parsers
+        .iter()
+        .filter(|p| !CONFIG.output_dir.join(p).exists())
+        .map(|s| s.as_str())
+        .collect();
+    if !missing.is_empty() {
+        eprintln!("[batch] WARNING: no output from: {}", missing.join(", "));
+    }
+
     let start = Instant::now();
     let ucb_results = collect_results(corpus, samples);
     println!(
-        "Collected results in {:.3} seconds",
+        "[batch] collected results in {:.3}s",
         start.elapsed().as_secs_f64()
     );
     ucb_results
@@ -45,16 +74,60 @@ fn save_inputs(samples: &[Sample]) {
 }
 
 fn run_parsers() {
-    Command::new("docker")
+    let batch_timeout_secs = CONFIG.batch_timeout_secs;
+    let batch_start = Instant::now();
+    println!(
+        "[batch] starting docker compose up (timeout={}s)",
+        batch_timeout_secs
+    );
+
+    let mut child = Command::new("docker")
         .arg("compose")
         .arg("up")
         .current_dir(&CONFIG.parsers_dir)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .expect("failed to run parsers")
-        .wait()
-        .expect("failed to wait for parsers");
+        .expect("failed to spawn docker compose");
+
+    let timeout = std::time::Duration::from_secs(batch_timeout_secs);
+    loop {
+        match child.try_wait().expect("failed to poll docker compose") {
+            Some(status) => {
+                println!(
+                    "[batch] docker compose finished in {:.1}s (status={})",
+                    batch_start.elapsed().as_secs_f64(),
+                    status
+                );
+                break;
+            }
+            None => {
+                if batch_start.elapsed() > timeout {
+                    eprintln!(
+                        "[batch] TIMEOUT after {}s — killing docker compose and containers",
+                        batch_timeout_secs
+                    );
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    // Force-stop all running parser containers
+                    let _ = Command::new("docker")
+                        .args(["compose", "down", "--timeout", "10"])
+                        .current_dir(&CONFIG.parsers_dir)
+                        .stdout(Stdio::null())
+                        .stderr(Stdio::null())
+                        .status();
+                    eprintln!("[batch] containers killed, continuing to next batch");
+                    break;
+                }
+                // Poll every 5s and print progress every 60s
+                let elapsed = batch_start.elapsed().as_secs();
+                if elapsed > 0 && elapsed % 60 == 0 {
+                    println!("[batch] still running... {elapsed}s elapsed");
+                }
+                std::thread::sleep(std::time::Duration::from_secs(5));
+            }
+        }
+    }
 }
 
 fn collect_results(corpus: &mut Corpus, samples: Vec<Sample>) -> Vec<(Vec<UcbHandle>, bool, f64)> {

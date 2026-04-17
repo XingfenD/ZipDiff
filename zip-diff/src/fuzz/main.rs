@@ -78,6 +78,11 @@ fn main() {
         );
         corpus.construct_weights();
         mutator.construct_ucb();
+        if let Some(stop_at) = CONFIG.stop_at {
+            if Instant::now() > stop_at {
+                break;
+            }
+        }
         let (seed_indices, samples): (Vec<_>, Vec<_>) = std::iter::repeat(())
             .filter_map(|_| {
                 let (seed_index, seed) = corpus.select_seed(rng);

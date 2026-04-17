@@ -10,6 +10,7 @@ use sysinfo::System;
 
 pub struct Config {
     pub batch_size: usize,
+    pub batch_timeout_secs: u64,
     pub parsers: Vec<String>,
     pub parsers_dir: PathBuf,
     pub input_dir: PathBuf,
@@ -60,6 +61,7 @@ pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
 
     Config {
         batch_size,
+        batch_timeout_secs: opts.batch_timeout_secs,
         parsers: parser_map.into_keys().collect(),
         parsers_dir,
         input_dir,
@@ -100,6 +102,9 @@ struct Cli {
     /// Stop running after how many seconds [default: infinite]
     #[arg(short, long)]
     stop_after_seconds: Option<u64>,
+    /// Per-batch timeout in seconds: kill docker compose if a batch exceeds this [default: 600]
+    #[arg(long, default_value_t = 600)]
+    batch_timeout_secs: u64,
     /// directory to find the parsers
     #[arg(long, default_value = "../parsers")]
     parsers_dir: String,

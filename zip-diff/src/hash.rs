@@ -105,7 +105,10 @@ fn dirhash(path: impl AsRef<Path>, par: bool, ignore_names: &HashSet<Vec<u8>>) -
             hasher.update(&child);
         }
     } else {
-        panic!("file does not exist, permission error, or unknown file type: {path_display}");
+        // On Windows, parser containers can produce special files (reparse points,
+        // symlinks, or files with non-UTF-8 names) that are neither is_file() nor
+        // is_dir(). Skip them rather than panicking, so the hash just omits that entry.
+        return None;
     }
 
     Some(hasher.finalize())
